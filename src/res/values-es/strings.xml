@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_message">Compruebe la conexión a Internet</string>
+    <string name="exit_app">Pulse de nuevo para salir</string>
+    <string name="try_again">Intentar de nuevo</string>
+    <string name="notification_error_ssl_cert_invalid">¡Error SSL! Se requiere permiso</string>
+    <string name="external_link">Enlace externo</string>
+    <string name="open_in_browser">¿Abrir este enlace en el navegador?</string>
+    <string name="open_in_external_app">¿Abrir este enlace en una aplicación externa?</string>
+    <string name="download_description">Descargando archivo…</string>
+    <string name="download_started">Descarga iniciada…</string>
+    <string name="download_failed">No se pudo iniciar la descarga.</string>
+    <string name="open_download_failed">No se puede abrir el archivo.</string>
+    <string name="choose_file">Elegir un archivo</string>
+    <string name="no_file_manager">No se puede abrir un gestor de archivos.</string>
+    <string name="ssl_error_message">%1$s\n\n%2$s</string>
+    <string name="ssl_error_date">El certificado ha caducado o aún no es válido</string>
+    <string name="ssl_error_host">El certificado es de otro sitio</string>
+    <string name="ssl_error_untrusted">No se confía en el certificado</string>
+    <string name="ssl_error_continue">Continuar</string>
+    <string name="auth_title">Se requiere autenticación</string>
+    <string name="auth_message">%1$s\n\n%2$s</string>
+</resources>

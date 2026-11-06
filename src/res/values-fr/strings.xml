@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_message">Vérifiez la connexion Internet</string>
+    <string name="exit_app">Appuyez à nouveau pour quitter</string>
+    <string name="try_again">Réessayer</string>
+    <string name="notification_error_ssl_cert_invalid">Erreur SSL ! Permission requise</string>
+    <string name="external_link">Lien externe</string>
+    <string name="open_in_browser">Ouvrir ce lien dans le navigateur ?</string>
+    <string name="open_in_external_app">Ouvrir ce lien dans une application externe?</string>
+    <string name="download_description">Téléchargement du fichier…</string>
+    <string name="download_started">Téléchargement commencé…</string>
+    <string name="download_failed">Échec du démarrage du téléchargement.</string>
+    <string name="open_download_failed">Impossible d\'ouvrir le fichier.</string>
+    <string name="choose_file">Choisir un fichier</string>
+    <string name="no_file_manager">Impossible d\'ouvrir un gestionnaire de fichiers.</string>
+    <string name="ssl_error_message">%1$s\n\n%2$s</string>
+    <string name="ssl_error_date">Le certificat a expiré ou n\'est pas encore valide</string>
+    <string name="ssl_error_host">Le certificat concerne un autre site</string>
+    <string name="ssl_error_untrusted">Le certificat n\'est pas approuvé</string>
+    <string name="ssl_error_continue">Continuer</string>
+    <string name="auth_title">Authentification requise</string>
+    <string name="auth_message">%1$s\n\n%2$s</string>
+</resources>

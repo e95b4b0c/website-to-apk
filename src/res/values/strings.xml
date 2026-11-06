@@ -1,0 +1,22 @@
+<resources>
+    <string name="error_message">Check internet connection</string>
+    <string name="exit_app">Tap back again to exit</string>
+    <string name="try_again">Try again</string>
+    <string name="notification_error_ssl_cert_invalid">SSL Error! Give Permission</string>
+    <string name="external_link">External Link</string>
+    <string name="open_in_browser">Open this link in browser?</string>
+    <string name="open_in_external_app">Open this link in external app?</string>
+    <string name="download_description">Downloading file…</string>
+    <string name="download_started">Download started…</string>
+    <string name="download_failed">Failed to start download.</string>
+    <string name="open_download_failed">Cannot open the file.</string>
+    <string name="choose_file">Choose a file</string>
+    <string name="no_file_manager">Cannot open a file manager.</string>
+    <string name="ssl_error_message">%1$s\n\n%2$s</string>
+    <string name="ssl_error_date">The certificate has expired or is not valid yet</string>
+    <string name="ssl_error_host">The certificate is for a different site</string>
+    <string name="ssl_error_untrusted">The certificate is not trusted</string>
+    <string name="ssl_error_continue">Continue</string>
+    <string name="auth_title">Authentication Required</string>
+    <string name="auth_message">%1$s\n\n%2$s</string>
+</resources>

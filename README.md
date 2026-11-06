@@ -23,7 +23,7 @@ cd website-to-apk
 id = myapp                          # Application ID (will be com.myapp.webtoapk)
 name = My App Name                  # Display name of the app
 mainURL = https://example.com       # Target website URL
-icon = example.png                  # Path to your app icon (PNG format)
+icon = my-icon.png                  # Path to your app icon (PNG format), empty = default icon
 
 allowSubdomains = true              # Allow navigation between example.com and sub.example.com
 requireDoubleBackToExit = true      # Require double back press to exit app
@@ -60,22 +60,13 @@ Pre-configured configuration files for YouTube are available in the <code>confs/
 - `./make.sh build [config]` - Apply configuration and build
 - `./make.sh keygen` - Generate signing key
 - `./make.sh test` - Install and test APK on connected device
-- `./make.sh clean` - Clean build files
+- `./make.sh clean` - Delete generated sources and build files
 -
-- `./make.sh apk` - Build APK without apply_config
+- `./make.sh apk` - Build APK from already generated sources
+- `./make.sh aab` - Build AAB from already generated sources
 - `./make.sh apply_config` - Apply settings from configuration file
 - `./make.sh get_java` - Download OpenJDK 17 locally
-
-## App Links / Deep Links
-
-You can make your app handle links to the website by setting the `deeplink` option in your configuration file. When set, clicking links to your website on the device will open them in your app instead of a browser.
-
-For example, if your website is `https://example.com`, set:
-```ini
-deeplink = example.com
-# or multiple
-deeplink = example.com www.example.com
-```
+- `./make.sh get_tools` - Download Android SDK command-line tools locally
 
 ## Userscripts Support
 
@@ -91,9 +82,9 @@ scripts = script1*.js script20.js  # Load specific script files
 
 ### How Userscripts Work
 
-- Scripts can use Tampermonkey/Violentmonkey/etc [`@match`](https://violentmonkey.github.io/api/metadata-block/#match--exclude-match) and [`@run-at`](https://violentmonkey.github.io/api/metadata-block/#run-at) directives, other ignored
+- Scripts can use Tampermonkey/Violentmonkey/etc [`@match`](https://violentmonkey.github.io/api/metadata-block/#match--exclude-match) and [`@run-at`](https://violentmonkey.github.io/api/metadata-block/#run-at) directives, other ignored. `@match` is a glob: `*` is the only wildcard, every other character (`?`, `+`, `(`, `.`) is literal
 - If no `@match` is specified, the script will run on all pages
-- Only `GM_addStyle` supported from Greasemonkey API
+- The `GM_*` helpers below are injected by `helpers.js`
 - There are `toast("short message")` function
 - Script console output (console.log/alert/warn) can be monitored using:
 ```bash
@@ -113,32 +104,57 @@ Example of some useful scripts:
 ## Additional WebView Options
 The following advanced options can also be configured:
 ```ini
-cookies = "key1=value1; key2=value2"  # Cookies for mainURL host
-basicAuth = login:password            # HTTP Basic Auth credentials for mainURL host
+versionCode = 1                       # Android version code (integer, must increase on each release)
+versionName = 1.0                     # Human-readable version shown to users
+cookies = "key1=value1; key2=value2"  # Cookies for the configured site, never for a deeplink host
+basicAuth = login:password            # HTTP Basic Auth credentials for the configured site
 userAgent = "MyCustomUserAgent/1.0"   # Custom UserAgent header
 JSEnabled = true                      # Enable JavaScript execution
 JSCanOpenWindowsAutomatically = true  # Allow JS to open new windows/popups
 
 DomStorageEnabled = true              # Enable HTML5 DOM storage
-DatabaseEnabled = true                # Enable HTML5 Web SQL Database
-SavePassword = true                   # Allow saving passwords in WebView
+MediaPlaybackRequiresUserGesture = true  # Require a tap before media can play
 AllowFileAccess = true
 AllowFileAccessFromFileURLs = true
-forceLandscapeMode = false            # Lock screen orientation to landscape
+forceLandscapeMode = false            # Lock screen orientation to landscape (Android 15+ ignores it on large screens)
+forceDarkTheme = false                # Tell the page the system is dark and theme the app dark (the site styles itself)
 
 showDetailsOnErrorScreen = false      # Show connection error details for user
+DebugWebView = false                  # Enable remote debugging via chrome://inspect
 confirmOpenExternalApp = true         # Show confirmation before opening external app
-blockLocalhostRequests = true         # Block requests to 127.0.0.1
+blockLocalhostRequests = true         # Block requests to localhost
 trustUserCA            = false        # Allow app to trust user-installed SSL certs
-geolocationEnabled     = false        # Allow access to device location (GPS)
+ca                     =              # Bundle custom CA certificates (see Advanced Topics)
+geolocationEnabled     = false        # Allow access to device location (GPS) — asks for precise and approximate; the page gets a position if either is granted
 cameraEnabled          = false        # Allow access to the camera for WebRTC or scanning
 microphoneEnabled      = false        # Allow access to the microphone for audio recording or calls
 allowMixedContent      = false        # Allow loading HTTP content on HTTPS sites
+allowSslErrors         = false        # Offer to continue past a TLS error (main page only)
+pullToRefresh          = false        # Enable native pull-to-refresh gesture
 cacheMode              = default      # Or: "no_cache" (always network), "aggressive" (offline-first)
 fadeInDuration         = 400          # Duration(in ms) of WebView fadeIn animation after spinner gone
 ```
 
-## Edge-to-Edge Display
+## Advanced Topics
+
+<details>
+<summary><b>App Links / Deep Links</b></summary>
+
+You can make your app handle links to the website by setting the `deeplink` option in your configuration file. When set, clicking links to your website on the device will open them in your app instead of a browser.
+
+For example, if your website is `https://example.com`, set:
+```ini
+deeplink = example.com
+# or multiple
+deeplink = example.com www.example.com
+```
+
+A link that arrives this way becomes the app's current URL, so the linked host counts as the app's own (its links stay inside the app instead of opening a browser). It does **not** move the configured `cookies` or `basicAuth` credentials: those stay bound to the site the config describes, and a link naming some other host never gets them.
+
+</details>
+
+<details>
+<summary><b>Edge-to-Edge Display</b></summary>
 
 You can enable an immersive `edge-to-edge` mode where your web content draws behind the system bars (the status bar at the top and the navigation bar at the bottom). This is ideal for modern designs that mimic a native app feel.
 
@@ -161,18 +177,135 @@ body {
 
 Additionally, once the inset variables are applied, the app dispatches a custom event `WebToApkInsetsApplied` on the `document` object.
 
+</details>
+
+<details>
+<summary><b>Pull-to-Refresh</b></summary>
+
+Set `pullToRefresh = true` to enable the native pull-down-to-refresh gesture.
+
+By default the page is simply reloaded. If you want to handle the refresh yourself (e.g. fetch data and update the DOM without a full page reload), define a hook on the injected `WebToApk` object:
+
+```js
+WebToApk.onPullToRefresh = function () {
+  // ... your refresh logic ...
+  WebToApk.setPullToRefreshRefreshing(false); // stop the spinner when done
+  return true; // true = the app does not reload the page
+};
+```
+
+If the hook is missing or returns `false`, the app reloads the page. When the hook returns `true` the spinner is stopped after 10 seconds even if `setPullToRefreshRefreshing(false)` was never called.
+
+`WebToApk.setPullToRefreshEnabled(false)` can be called from JS to toggle the gesture at runtime.
+
+Note: the gesture is decided by the *document's* scroll position. On a page that scrolls an inner
+element (a typical SPA) the document never scrolls, so it fires wherever you are on the page. That is
+the site's to decide — keep it off and enable it from the scroller's own handler:
+
+```js
+WebToApk.setPullToRefreshEnabled(false);
+scroller.addEventListener('scroll', () => WebToApk.setPullToRefreshEnabled(scroller.scrollTop <= 0));
+```
+
+See [`confs/ptr-demo/`](confs/ptr-demo/) for a ready-to-build example that switches between JS and native control on the fly.
+
+</details>
+
+<details>
+<summary><b>JavaScript API</b></summary>
+
+The app injects a `window.WebToApk` object into every page. The methods are available at any time (a few, such as notifications, additionally require the user's permission).
+
+| Method | Description |
+|---|---|
+| `showShortToast(message)` | Show a short Android toast. |
+| `showLongToast(message)` | Show a long Android toast. |
+| `share(title, text, url)` | Open the system share sheet. |
+| `showNotification(title, message)` | Post a local Android notification. |
+| `requestNotificationPermission()` | Ask for the notification permission. |
+| `hasNotificationPermission()` | `true` if notifications are allowed. |
+| `getNotificationPermissionState()` | `"granted"`, `"denied"` or `"prompt"`. |
+| `clearAppCache()` | Clear the WebView HTTP cache. |
+| `setPullToRefreshEnabled(enabled)` | Toggle the pull-to-refresh gesture at runtime. |
+| `setPullToRefreshRefreshing(refreshing)` | Show/hide the refresh spinner. |
+| `getDownloads()` | The app's downloads as a JSON string: `[{id, url, filename, mime, bytes, total, status}]`. |
+| `removeDownload(id)` | Delete one of the app's downloads — record and file — and return `true` if it went. |
+| `openDownloadedFile(id)` | Open a finished download with the system viewer. |
+| `shareDownloadedFile(id)` | Send a finished download to another app. |
+
+See also the hooks `WebToApk.onPullToRefresh` (above), `WebToApk.onDownloadStarted(id, url)` and `WebToApk.onDownloadComplete(id)`.
+
+HTTP/HTTPS downloads are handed to Android's `DownloadManager`, so they keep running in the background. `getDownloads()` returns their progress and status (`pending`, `running`, `paused`, `successful`, `failed`; `total` is `-1` until known) and only sees files downloaded by this app. Page-generated `blob:` and `data:` downloads open the system file picker and stream directly to disk.
+
+`helpers.js` forwards `navigator.mediaSession` to the native media notification and lock-screen controls, and polyfills standard web APIs:
+
+| Global | Description |
+|---|---|
+| `toast(message)` | Alias of `showShortToast`. |
+| `navigator.share(data)` | Web Share API on top of the native share sheet. |
+| `Notification`, `Notification.requestPermission()`, `Notification.permission` | Web Notification API on top of local Android notifications. |
+| `GM_addStyle(css)`, `GM_getValue`/`GM_setValue`/`GM_deleteValue`/`GM_listValues`, `GM_addValueChangeListener`, `GM_setClipboard`, `GM_addElement`, `GM_log`, `GM_notification`, `GM_openInTab`, `GM_info`, `GM_xmlhttpRequest` | The Greasemonkey helpers shipped in `helpers.js`; values live in `localStorage`. |
+
+</details>
+
+<details>
+<summary><b>Bundling Custom CA Certificates</b></summary>
+
+`trustUserCA = true` only trusts CAs the **user installed on the device**. To make the app trust a CA out of the box, bundle it:
+
+```ini
+ca = my_root_ca.pem     # Relative to the config file, space-separated list is allowed
+```
+
+`make.sh` copies each certificate into `res/raw/` and adds it to the trust anchors in
+`network_security_config.xml` (which the manifest always references), so nothing else needs to be
+edited. The name must be lowercase (`my_ca.pem`) because it becomes the resource name. The list is
+rebuilt on every build, so removing a certificate from the config removes it from the app.
+
+</details>
+
+<details>
+<summary><b>Offline / Bundled Local Site</b></summary>
+
+Instead of a remote `mainURL`, you can bundle a whole folder of HTML/CSS/JS into the APK and have the app open it:
+
+```ini
+site = ./mysite     # Must contain index.html, relative paths are resolved from the config file
+```
+
+`make.sh` copies the folder into the APK and the app opens it instead of `mainURL`. The files are served over a virtual `https://app.local/` origin instead of `file://`, so everything that needs a real origin keeps working: `fetch`, `localStorage`, `sessionStorage`, IndexedDB, ES modules, Web Workers, cookies and the `WebToApk` JavaScript API. The app works with the network completely off.
+
+Notes:
+- `mainURL`, `deeplink`, `allowSubdomains` and `cookies` are ignored while `site` is set.
+- See <code>confs/local-demo</code> for a working example.
+
+</details>
+
+<details>
+<summary><b>Notifications & Push</b></summary>
+
+**Local notifications work** while the page is open via the standard web `Notification` API (or `WebToApk.showNotification`).
+
+**Server push to a closed app does not work, and it is not something this project can fix.** Android WebView has no Service Worker and no Push API (Google marked Web Push in WebView as WONTFIX), so there is no way to wake the app from your server once it is closed.
+
+The project used to bundle [UnifiedPush](https://unifiedpush.org/) to work around this, but it was removed. It required the user to install a separate *distributor* app, disable battery optimisation and often enable autostart (Xiaomi/Oppo/Realme and friends), and even then delivery to a fully closed app was unreliable — too much friction for a zero-config wrapper.
+
+If you need real push, open an issue. An **optional** integration (FCM, HMS or another vendor push) can be added, where each fork registers its own token for its own app with the provider that works in its region (Google, Huawei, ...). That keeps the default build free of any push dependency.
+
+</details>
+
 ## Technical Details
 
-- Target Android API: 33 (Android 13)
-- Minimum Android API: 24 (Android 7.0)
-- Build tools version: 33.0.2
-- Gradle version: 7.4
-- Required Java version: 17
+- Target Android API: 36 (Android 16)
+- Minimum Android API: 26 (Android 8.0)
+- Android Gradle Plugin: 8.10.0
+- Gradle version: 8.11.1
+- Required Java version: 17 or newer (a JDK, not a JRE)
 
 ## Notes
 
-- All app data is stored in the app's private directory
-- The keystore `app/my-release-key.jks` password is set to "123456" by default
-- Internet permission is required and automatically included
-- If you need to support [different Android versions](https://apilevels.com/), edit `app/build.gradle` accordingly
-- Based on the original work from: https://github.com/successtar/web-to-app  
+- App data lives in the app's private directory
+- Keystore `my-release-key.jks` (repo root), password `123456`
+- `blockLocalhostRequests` covers `127.0.0.0/8`, `::1`, `0.0.0.0`, `localhost`
+- Other Android versions: edit `src/build.gradle` ([API levels](https://apilevels.com/))
+- Based on https://github.com/successtar/web-to-app

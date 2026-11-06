@@ -1,0 +1,78 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.10.0'
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: 'com.android.application'
+
+// Written by ./make.sh from the applied config, ignored by git
+apply from: '../config.gradle'
+
+android {
+    // The namespace is where R/BuildConfig are generated and how the relative names in the manifest
+    // resolve; it does NOT have to be the application id. Keeping it fixed means the Java package
+    // never depends on the config, so sync_sources() copies src/java/ in verbatim — no sed.
+    namespace 'com.myexample.webtoapk'
+
+    compileSdk 36
+    defaultConfig {
+        applicationId appId
+        minSdk 26
+        targetSdk 36
+        versionCode appVersionCode
+        versionName appVersionName
+
+        // Keep only the locales the app actually ships (values-* in res/).
+        // Drops ~70 unused translations bundled by appcompat/fragment/emoji2.
+        resourceConfigurations += ["en", "de", "es", "fr", "ru", "zh"]
+    }
+
+    lint {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("../my-release-key.jks")
+            storePassword "123456"
+            keyAlias "my"
+            keyPassword "123456"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.core:core:1.9.0'
+    implementation 'androidx.webkit:webkit:1.6.1'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+}
