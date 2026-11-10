@@ -192,6 +192,9 @@ public class MainActivity extends AppCompatActivity {
     private static final String LOCAL_SITE_DOMAIN = "app.local";
     private static final String LOCAL_SITE_URL = "https://" + LOCAL_SITE_DOMAIN + "/";
     private static final String LOCAL_SITE_ASSET_DIR = "site";
+    // Bundled files (config key `assets`): assets/files/** at https://app.local/files/**
+    private static final String BUNDLED_FILES_PATH = "/files/";
+    private static final String BUNDLED_FILES_ASSET_DIR = "files";
     private WebViewAssetLoader assetLoader;
 
     /* forceDarkTheme has to reach the WebView, not just the app's own resources: the WebView takes
@@ -240,8 +243,11 @@ public class MainActivity extends AppCompatActivity {
         // — and it left the error screen outside the inset padding applied below.
         mainLayout = findViewById(android.R.id.content);
         appLayout = findViewById(R.id.appRoot);
+        // `/files/` first: the loader hands the request to the first handler whose prefix matches,
+        // and the `/` handler below would otherwise swallow it
         assetLoader = new WebViewAssetLoader.Builder()
             .setDomain(LOCAL_SITE_DOMAIN)
+            .addPathHandler(BUNDLED_FILES_PATH, this::handleBundledFileRequest)
             .addPathHandler("/", this::handleLocalSiteRequest)
             .build();
         if (hasBundledSite()) {
@@ -1607,12 +1613,39 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /* Serves assets/files/** at https://app.local/files/** — files bundled by the `assets` config
+       key (a Nerd Font, say) for a page that is *not* the bundled local site.
+
+       The CORS header is what makes them usable at all: a font is fetched in CORS mode whatever the
+       page's own origin is, and a font that fails that check is dropped without an error the page
+       could show. mimeTypeOf() covers the font types because the platform table does not. */
+    private WebResourceResponse handleBundledFileRequest(String path) {
+        if (path.contains("..")) {
+            return new WebResourceResponse("text/plain", "UTF-8", 403, "Forbidden", null, null);
+        }
+        Map<String, String> headers = new java.util.HashMap<>();
+        headers.put("Access-Control-Allow-Origin", "*");
+        try {
+            WebResourceResponse response = new WebResourceResponse(mimeTypeOf(path), null,
+                getAssets().open(BUNDLED_FILES_ASSET_DIR + "/" + path));
+            response.setResponseHeaders(headers);
+            return response;
+        } catch (IOException e) {
+            return new WebResourceResponse("text/plain", "UTF-8", 404, "Not Found", headers,
+                new ByteArrayInputStream(new byte[0]));
+        }
+    }
+
     /* The platform table is not enough where the MIME type is checked strictly: a module served as
        text/plain is refused outright, and WebAssembly.instantiateStreaming needs application/wasm. */
     private static String mimeTypeOf(String path) {
         String name = path.toLowerCase(Locale.US);
         if (name.endsWith(".js") || name.endsWith(".mjs")) return "text/javascript";
         if (name.endsWith(".wasm")) return "application/wasm";
+        if (name.endsWith(".woff2")) return "font/woff2";
+        if (name.endsWith(".woff")) return "font/woff";
+        if (name.endsWith(".ttf")) return "font/ttf";
+        if (name.endsWith(".otf")) return "font/otf";
         String mime = URLConnection.guessContentTypeFromName(path);
         return mime != null ? mime : "text/plain";
     }

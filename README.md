@@ -131,6 +131,7 @@ microphoneEnabled      = false        # Allow access to the microphone for audio
 allowMixedContent      = false        # Allow loading HTTP content on HTTPS sites
 allowSslErrors         = false        # Offer to continue past a TLS error (main page only)
 pullToRefresh          = false        # Enable native pull-to-refresh gesture
+assets                 =              # Bundle static files (see "Bundled Asset Files")
 cacheMode              = default      # Or: "no_cache" (always network), "aggressive" (offline-first)
 fadeInDuration         = 400          # Duration(in ms) of WebView fadeIn animation after spinner gone
 ```
@@ -278,6 +279,39 @@ site = ./mysite     # Must contain index.html, relative paths are resolved from 
 Notes:
 - `mainURL`, `deeplink`, `allowSubdomains` and `cookies` are ignored while `site` is set.
 - See <code>confs/local-demo</code> for a working example.
+
+</details>
+
+<details>
+<summary><b>Bundled Asset Files</b></summary>
+
+`scripts` bundles userscripts. A page sometimes needs a plain file instead — a font, a stylesheet, an
+image — and `assets` puts it in the APK:
+
+```ini
+assets = fonts/terminal.woff2 assets/extra.css   # Relative to the config file, space-separated list
+```
+
+Every file is served at `https://app.local/files/<basename>` (the path is flattened, so the basenames
+have to be unique) to **every** page the app opens, with `Access-Control-Allow-Origin: *`. Unlike
+`site`, `assets` does not replace `mainURL`; it only makes the files reachable.
+
+That CORS header is what makes a font work: fonts are fetched in CORS mode whatever the page's own
+origin is, and a font that fails the check is dropped without any error the page could see.
+
+A userscript is what consumes the file, e.g.:
+
+```js
+const style = document.createElement('style');
+style.textContent = '@font-face { font-family: "MyMono"; ' +
+    'src: url("https://app.local/files/terminal.woff2") format("woff2"); }';
+document.head.appendChild(style);
+await document.fonts.load('16px "MyMono"');   // a canvas draws with the fallback until then
+```
+
+<code>confs/ttyd</code> is a working example: Android has none of the fonts ttyd asks for and its
+fallback monospace has no Powerline/devicon glyphs, so the app bundles a Nerd Font and `nerd-font.js`
+hands it to xterm.
 
 </details>
 

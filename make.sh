@@ -309,6 +309,9 @@ apply_config() {
             "site")
                 set_site "$value"
                 ;;
+            "assets")
+                set_assets "$value"
+                ;;
             *)
                 set_var "$key = $value"
                 ;;
@@ -643,6 +646,29 @@ set_userscripts() {
         base_name=$(basename "$file")
         cp "$file" "$scripts_dir/$base_name"
         log "Added userscript: $base_name"
+    done < <(config_files "$1")
+}
+
+
+# assets = font.woff2 [icons/*.png] — bundle arbitrary files into the APK. Pages reach them at
+# https://app.local/files/<basename> (see README, "Bundled Asset Files"); the name is flattened,
+# so two files with the same basename are one file. Relative paths are resolved against the config.
+set_assets() {
+    local files_dir="app/src/main/assets/files"
+
+    # Empty value: sync_sources() unpacks the template's assets (helpers.js only), so any file the
+    # config dropped is already gone
+    [ -z "${1:-}" ] && return 0
+
+    mkdir -p "$files_dir"
+
+    local file base_name
+    while IFS= read -r file; do
+        # Same as scripts/ca/site: a typo'd path shipped an app without the file it asked for
+        [ ! -f "$file" ] && error "Asset file not found: $file"
+        base_name=$(basename "$file")
+        cp "$file" "$files_dir/$base_name"
+        log "Bundled asset: $base_name"
     done < <(config_files "$1")
 }
 
